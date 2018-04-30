@@ -8,10 +8,10 @@ class Database {
   }
   query(sql, args) {
     return new Promise((resolve, reject) => {
-      this.connection.query(sql, args, (err, rows) => {
+      this.connection.query(sql, args, (err, results) => {
         if (err)
           return reject(err);
-        resolve(rows);
+        resolve(results);
       });
     });
   }
@@ -19,7 +19,7 @@ class Database {
     return new Promise((resolve, reject) => {
       this.connection.end(err => {
         if (err) {
-          console.log("This is an error!");
+          console.log("This is the error!");
           return reject(err);
         }
         resolve();
@@ -35,17 +35,18 @@ let bamazon = new Database({
 });
 start();
 function start() {
+  let bamaQuery = 'SELECT * FROM products';
 
-  bamazon.query('SELECT * FROM products').then(rows => {
-    chooseQuestions(rows);
+  bamazon.query(bamaQuery).then(newQuery => {
+    chooseQuestions(newQuery);
   })
 }
 
-function chooseQuestions(rows) {
+function chooseQuestions(results) {
   let listOfIds = [];
-  for (let i = 0; i < rows.length; i++) {
-    listOfIds.push(rows[i].item_id.toString());
-    console.log(`Id: ${rows[i].item_id}, Item Name: ${rows[i].product_name}, Price: ${rows[i].price_retail}`);
+  for (let i = 0; i < results.length; i++) {
+    listOfIds.push(results[i].item_id.toString());
+    console.log(`Id: ${results[i].item_id}, Item Name: ${results[i].product_name}, Price: ${results[i].price_retail}`);
   }
   inquirer.prompt([
     {
@@ -67,13 +68,13 @@ function chooseQuestions(rows) {
 function purchaseProduct(choice, amount) {
   choice = parseInt(choice);
   amount = parseInt(amount);
-  bamazon.query(`SELECT * FROM products WHERE item_id = ${choice}`).then(rows => {
-    let currentPurchaseTotal = rows[0].product_sales;
-    if (rows[0].stock_quantity >= amount) {
-      let stockLeft = (rows[0].stock_quantity - amount);
-      let cost = (rows[0].price_retail * amount);
-      let purchaseQty = (rows[0].qty_purchaced + amount)
-      calculateTransaction(rows[0].product_name, choice, stockLeft, cost, currentPurchaseTotal, amount)
+  bamazon.query(`SELECT * FROM products WHERE item_id = ${choice}`).then(results => {
+    let currentPurchaseTotal = results[0].product_sales;
+    if (results[0].stock_quantity >= amount) {
+      let stockLeft = (results[0].stock_quantity - amount);
+      let cost = (results[0].price_retail * amount);
+      let purchaseQty = (results[0].qty_purchaced + amount)
+      calculateTransaction(results[0].product_name, choice, stockLeft, cost, currentPurchaseTotal, purchaseQty, amount)
     } else {
       console.log("Im sorry, there is not enough left in stock, please try again!".red);
       start();
@@ -81,16 +82,16 @@ function purchaseProduct(choice, amount) {
   })
 }
 
-function calculateTransaction(item, choice, stockLeft, cost, currentPurchaseTotal, amount) {
+function calculateTransaction(item, choice, stockLeft, cost, currentPurchaseTotal, purchaseQty, amount) {
   bamazon.query(`Update products SET ? WHERE item_id = ${choice}`,
     {
       stock_quantity: stockLeft,
       product_sales: cost + currentPurchaseTotal,
-      qty_purchaced: 0
+      qty_purchaced: purchaseQty
     }
   ).then(rows => {
     cost = cost.toFixed(2);
-    console.log(`You successfully purchased ${item}(s) for ${cost}`.green);
+    console.log(`You successfully purchased ${item}(s) for $${cost}`.green);
     start();
   })
 }

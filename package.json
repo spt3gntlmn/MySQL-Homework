@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/spt3gntlmn/MySQL-Homework#readme",
   "dependencies": {
+    "colors": "^1.2.1",
     "inquirer": "^5.2.0",
     "mysql": "^2.15.0",
     "require": "^2.4.20"
